@@ -1,0 +1,39 @@
+name: shop_app
+description: Tools / PC parts shop app (Flutter + Firebase + Supabase + Xendit).
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase: auth, database, image storage
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.3
+  firebase_storage: ^12.3.2
+
+  # State management (the one taught in BMC)
+  provider: ^6.1.2
+
+  # Payment: call Supabase Edge Functions, then open the Xendit invoice link
+  http: ^1.2.2
+  url_launcher: ^6.3.1
+
+  # Utilities
+  intl: ^0.19.0
+  image_picker: ^1.1.2
+  cached_network_image: ^3.4.1
+  google_sign_in: ^6.2.2
+  webview_flutter: ^4.14.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
