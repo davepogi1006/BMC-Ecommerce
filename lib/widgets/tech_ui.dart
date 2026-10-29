@@ -262,6 +262,7 @@ class TechStatusLabel extends StatelessWidget {
       'failed' => (Icons.error_outline, 'PAYMENT FAILED'),
       'disabled' => (Icons.block_outlined, 'DISABLED'),
       'admin' => (Icons.admin_panel_settings_outlined, 'ADMIN'),
+      'seller' => (Icons.storefront_outlined, 'SELLER'),
       'customer' => (Icons.person_outline, 'CUSTOMER'),
       _ => (Icons.schedule_outlined, normalized.toUpperCase()),
     };

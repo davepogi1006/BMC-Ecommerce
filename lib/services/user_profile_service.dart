@@ -165,7 +165,7 @@ class UserProfileService {
   }
 
   Future<void> updateRole(String uid, String role) {
-    if (role != 'customer' && role != 'admin') {
+    if (!const {'customer', 'seller', 'admin'}.contains(role)) {
       throw ArgumentError.value(role, 'role', 'Unsupported role');
     }
     return _adminAction({

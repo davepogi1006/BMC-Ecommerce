@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -9,7 +8,9 @@ import '../widgets/tech_ui.dart';
 import 'product_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final String searchQuery;
+
+  const HomeScreen({super.key, this.searchQuery = ''});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -17,10 +18,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late final Stream<List<Product>> _stream;
-  final _searchController = TextEditingController();
-  Timer? _searchDebounce;
   String _category = 'All';
-  String _searchQuery = '';
   String _sortOrder = 'newest';
 
   @override
@@ -30,28 +28,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  void dispose() {
-    _searchDebounce?.cancel();
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _updateSearch(String value) {
-    _searchDebounce?.cancel();
-    _searchDebounce = Timer(const Duration(milliseconds: 250), () {
-      if (mounted) setState(() => _searchQuery = value.trim());
-    });
-  }
-
-  void _clearSearch() {
-    _searchDebounce?.cancel();
-    _searchController.clear();
-    setState(() => _searchQuery = '');
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final chips = ['All', ...productCategories];
+    final chips = [
+      'All',
+      ...productCategories.where(
+        (category) => category != 'Power Tools' && category != 'Hand Tools',
+      ),
+    ];
 
     return Scaffold(
       body: LayoutBuilder(
@@ -74,28 +57,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding: EdgeInsets.fromLTRB(
                         sideInset + 16, 14, sideInset + 16, 12),
                     child: const TechBrandLockup(showDescriptor: true),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                        sideInset + 12, 0, sideInset + 12, 16),
-                    child: TextField(
-                      controller: _searchController,
-                      textInputAction: TextInputAction.search,
-                      decoration: InputDecoration(
-                        hintText: 'Search products, categories, or labels',
-                        prefixIcon: const Icon(Icons.search),
-                        suffixIcon: _searchQuery.isEmpty
-                            ? null
-                            : IconButton(
-                                tooltip: 'Clear search',
-                                onPressed: _clearSearch,
-                                icon: const Icon(Icons.clear),
-                              ),
-                      ),
-                      onChanged: _updateSearch,
-                    ),
                   ),
                 ),
                 SliverToBoxAdapter(
@@ -172,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     }
 
-                    final query = _searchQuery.toLowerCase();
+                    final query = widget.searchQuery.toLowerCase();
                     final matchingProducts = snap.data!
                         .where((p) =>
                             _category == 'All' || p.category == _category)
@@ -186,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         .toList();
 
                     final showHighlights =
-                        _searchQuery.isEmpty && _category == 'All';
+                        widget.searchQuery.isEmpty && _category == 'All';
                     final featured = showHighlights
                         ? matchingProducts.where((p) => p.isFeatured).toList()
                         : <Product>[];
@@ -243,7 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               4,
                             ),
                             child: Text(
-                              _searchQuery.isNotEmpty
+                              widget.searchQuery.isNotEmpty
                                   ? 'Search results'
                                   : _category == 'All'
                                       ? 'Shop the collection'

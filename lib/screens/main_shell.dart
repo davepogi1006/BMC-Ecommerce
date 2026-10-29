@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
@@ -18,13 +20,29 @@ class MainShell extends StatefulWidget {
 
 class MainShellState extends State<MainShell> {
   int _index = 0;
+  final _searchController = TextEditingController();
+  Timer? _searchDebounce;
+  String _searchQuery = '';
 
-  late final _pages = [
-    const HomeScreen(),
-    const CartScreen(),
-    const OrdersScreen(),
-    const ProfileScreen(),
-  ];
+  void _updateSearch(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 250), () {
+      if (mounted) setState(() => _searchQuery = value.trim());
+    });
+  }
+
+  void _clearSearch() {
+    _searchDebounce?.cancel();
+    _searchController.clear();
+    setState(() => _searchQuery = '');
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
 
   void selectShop() {
     setState(() => _index = 0);
@@ -61,56 +79,125 @@ class MainShellState extends State<MainShell> {
         ),
       ];
 
+  Widget _searchField() => TextField(
+        controller: _searchController,
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: 'Search products, categories, or labels',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _searchController.text.isEmpty
+              ? null
+              : IconButton(
+                  tooltip: 'Clear search',
+                  onPressed: _clearSearch,
+                  icon: const Icon(Icons.clear),
+                ),
+        ),
+        onChanged: _updateSearch,
+      );
+
+  Widget _desktopNavigation(
+    BuildContext context,
+    List<NavigationDestination> destinations,
+  ) {
+    final colors = Theme.of(context).colorScheme;
+    return SizedBox(
+      width: 280,
+      child: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(12, 14, 12, 22),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Tooltip(
+                message: 'TECHNOLOGIA',
+                child: TechChipMark(),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: _searchField(),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              itemCount: destinations.length,
+              itemBuilder: (context, index) {
+                final destination = destinations[index];
+                final selected = _index == index;
+                return ListTile(
+                  selected: selected,
+                  selectedColor: colors.onPrimary,
+                  selectedTileColor: colors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  leading: SizedBox(
+                    width: 28,
+                    child: Center(
+                      child: selected
+                          ? destination.selectedIcon ?? destination.icon
+                          : destination.icon,
+                    ),
+                  ),
+                  title: Text(destination.label),
+                  onTap: () => setState(() => _index = index),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cartCount = context.watch<CartProvider>().count;
     final destinations = _destinations(cartCount);
+    final pages = [
+      HomeScreen(searchQuery: _searchQuery),
+      const CartScreen(),
+      const OrdersScreen(),
+      const ProfileScreen(),
+    ];
     final wide = MediaQuery.sizeOf(context).width >= 800;
 
     return Scaffold(
       body: wide
           ? Row(
               children: [
-                NavigationRail(
-                  selectedIndex: _index,
-                  onDestinationSelected: (index) =>
-                      setState(() => _index = index),
-                  labelType: NavigationRailLabelType.all,
-                  minWidth: 76,
-                  leading: const Padding(
-                    padding: EdgeInsets.fromLTRB(12, 14, 12, 26),
-                    child: Tooltip(
-                      message: 'TECHNOLOGIA',
-                      child: TechChipMark(),
-                    ),
-                  ),
-                  destinations: [
-                    for (final destination in destinations)
-                      NavigationRailDestination(
-                        icon: destination.icon,
-                        selectedIcon:
-                            destination.selectedIcon ?? destination.icon,
-                        label: Text(destination.label),
-                      ),
-                  ],
-                ),
+                _desktopNavigation(context, destinations),
                 VerticalDivider(
                   width: 1,
                   thickness: 1,
                   color: Theme.of(context).colorScheme.outlineVariant,
                 ),
                 Expanded(
-                  child: IndexedStack(index: _index, children: _pages),
+                  child: IndexedStack(index: _index, children: pages),
                 ),
               ],
             )
-          : IndexedStack(index: _index, children: _pages),
+          : IndexedStack(index: _index, children: pages),
       bottomNavigationBar: wide
           ? null
-          : NavigationBar(
-              selectedIndex: _index,
-              onDestinationSelected: (index) => setState(() => _index = index),
-              destinations: destinations,
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_index == 0)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                    child: _searchField(),
+                  ),
+                NavigationBar(
+                  selectedIndex: _index,
+                  onDestinationSelected: (index) =>
+                      setState(() => _index = index),
+                  destinations: destinations,
+                ),
+              ],
             ),
     );
   }

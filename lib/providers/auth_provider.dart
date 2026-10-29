@@ -18,6 +18,8 @@ class AuthProvider extends ChangeNotifier {
   bool loading = true; // true until Firebase tells us who is logged in
 
   bool get isAdmin => role == 'admin';
+  bool get isSeller => role == 'seller';
+  bool get canAddProducts => isAdmin || isSeller;
 
   AuthProvider() {
     _sub = _service.authChanges.listen((u) {

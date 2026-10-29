@@ -47,26 +47,47 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
   }
 
   Future<void> _changeRole(UserProfile profile) async {
-    final newRole = profile.role == 'admin' ? 'customer' : 'admin';
-    final confirmed = await showDialog<bool>(
+    var selectedRole = profile.role;
+    final newRole = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Change user role?'),
-        content: Text(
-            'Change ${profile.email} from ${profile.role} to $newRole? Admins can manage products and user roles.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Change user role'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                initialValue: selectedRole,
+                decoration: const InputDecoration(labelText: 'Role'),
+                items: const [
+                  DropdownMenuItem(value: 'customer', child: Text('Customer')),
+                  DropdownMenuItem(value: 'seller', child: Text('Seller')),
+                  DropdownMenuItem(value: 'admin', child: Text('Admin')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setDialogState(() => selectedRole = value);
+                  }
+                },
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Change role'),
-          ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: selectedRole == profile.role
+                  ? null
+                  : () => Navigator.pop(context, selectedRole),
+              child: const Text('Save role'),
+            ),
+          ],
+        ),
       ),
     );
-    if (confirmed != true || !mounted) return;
+    if (newRole == null || newRole == profile.role || !mounted) return;
 
     setState(() => _updatingRoles.add(profile.id));
     try {
@@ -285,16 +306,13 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                                           ),
                                         ),
                                         if (profile.id != currentUid)
-                                          PopupMenuItem(
+                                          const PopupMenuItem(
                                             value: 'role',
                                             child: ListTile(
                                               contentPadding: EdgeInsets.zero,
-                                              leading: const Icon(Icons
-                                                  .admin_panel_settings_outlined),
-                                              title: Text(
-                                                  profile.role == 'admin'
-                                                      ? 'Make customer'
-                                                      : 'Make admin'),
+                                              leading: Icon(Icons
+                                                  .manage_accounts_outlined),
+                                              title: Text('Change role'),
                                             ),
                                           ),
                                         if (profile.id != currentUid)

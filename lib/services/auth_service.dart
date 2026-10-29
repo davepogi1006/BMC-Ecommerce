@@ -17,8 +17,7 @@ class AuthService {
       email: email.trim(),
       password: password,
     );
-    // Every user gets a profile document. New users are always "customer".
-    // To make someone an admin, edit "role" by hand in the Firebase Console.
+    // New users start as customers; admins can assign other roles later.
     await _db.collection('users').doc(cred.user!.uid).set({
       'name': name,
       'email': email,

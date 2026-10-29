@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../app_theme.dart';
 import '../models/cart_item.dart';
+import '../models/user_profile.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../services/order_service.dart';
 import '../services/payment_service.dart';
+import '../services/user_profile_service.dart';
 import '../utils/format.dart';
 import '../widgets/tech_ui.dart';
 import 'main_shell.dart';
@@ -29,7 +33,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _formKey = GlobalKey<FormState>();
   final _address = TextEditingController();
   final _phone = TextEditingController();
+  StreamSubscription<UserProfile?>? _profileSubscription;
   late final List<CartItem> _items;
+  bool _addressEdited = false;
+  bool _phoneEdited = false;
   bool _busy = false;
   bool _orderSaved = false;
   String? _orderId;
@@ -50,10 +57,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               quantity: item.quantity,
             ))
         .toList();
+
+    final uid = context.read<AuthProvider>().user?.uid;
+    if (uid != null) {
+      _profileSubscription = UserProfileService().streamProfile(uid).listen(
+        (profile) {
+          if (!mounted || profile == null) return;
+          if (!_addressEdited && _address.text.isEmpty) {
+            _address.text = profile.address;
+          }
+          if (!_phoneEdited && _phone.text.isEmpty) {
+            _phone.text = profile.phone;
+          }
+        },
+      );
+    }
   }
 
   @override
   void dispose() {
+    _profileSubscription?.cancel();
     _address.dispose();
     _phone.dispose();
     super.dispose();
@@ -117,7 +140,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
   }
 
-  void _backToMainPage() {
+  void _backToShopHome() {
     Navigator.of(context).popUntil((route) => route.isFirst);
     mainShellKey.currentState?.selectShop();
   }
@@ -127,13 +150,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Checkout'),
-        actions: [
-          TextButton.icon(
-            onPressed: _backToMainPage,
-            icon: const Icon(Icons.home_outlined),
-            label: const Text('Exit to home'),
-          ),
-        ],
+        leading: IconButton(
+          tooltip: 'Back to shop',
+          onPressed: _backToShopHome,
+          icon: const Icon(Icons.arrow_back),
+        ),
       ),
       body: _items.isEmpty
           ? const Center(child: Text('There are no items to check out.'))
@@ -200,6 +221,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         controller: _address,
                         maxLines: 2,
                         enabled: _orderId == null,
+                        onChanged: (_) => _addressEdited = true,
                         decoration: const InputDecoration(
                           labelText: 'Shipping address',
                         ),
@@ -213,6 +235,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         controller: _phone,
                         keyboardType: TextInputType.phone,
                         enabled: _orderId == null,
+                        onChanged: (_) => _phoneEdited = true,
                         decoration: const InputDecoration(
                           labelText: 'Phone number',
                         ),

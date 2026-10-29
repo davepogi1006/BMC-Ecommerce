@@ -5,7 +5,7 @@ import '../models/product.dart';
 class FirestoreService {
   final _products = FirebaseFirestore.instance.collection('products');
 
-  /// Live list: updates instantly when an admin adds a product.
+  /// Live list: updates instantly when an admin or seller adds a product.
   /// We filter by category in the app (not in the query) so you don't
   /// need to create a Firestore index.
   Stream<List<Product>> streamProducts() {

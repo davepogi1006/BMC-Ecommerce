@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../app_theme.dart';
 import '../../models/product.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../utils/format.dart';
 import '../../widgets/product_card.dart';
@@ -19,12 +21,14 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
   final Set<String> _busyProductIds = {};
 
   Future<void> _editProduct(Product product) async {
+    if (!context.read<AuthProvider>().canAddProducts) return;
     await Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => AddProductScreen(product: product),
     ));
   }
 
   Future<void> _deleteProduct(Product product) async {
+    if (!context.read<AuthProvider>().canAddProducts) return;
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -66,6 +70,7 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isAdmin = context.watch<AuthProvider>().isAdmin;
     return Scaffold(
       appBar: AppBar(title: const Text('Manage products')),
       body: StreamBuilder<List<Product>>(
@@ -89,13 +94,16 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
             separatorBuilder: (_, __) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               if (index == 0) {
-                return const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 20, 16, 10),
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
                   child: TechPageIntro(
-                    eyebrow: 'Administration / catalog',
+                    eyebrow: isAdmin
+                        ? 'Administration / catalog'
+                        : 'Seller / catalog',
                     title: 'Manage products.',
-                    description:
-                        'Edit availability, product information, and shop highlights.',
+                    description: isAdmin
+                        ? 'Edit availability, product information, and shop highlights.'
+                        : 'Edit or remove product listings from the shop.',
                   ),
                 );
               }

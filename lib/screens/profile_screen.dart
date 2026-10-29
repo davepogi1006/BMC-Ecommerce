@@ -113,12 +113,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        if (auth.isAdmin) ...[
-                          const Padding(
-                            padding: EdgeInsets.fromLTRB(8, 8, 8, 8),
+                        if (auth.canAddProducts) ...[
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
                             child: TechEyebrow(
-                              'Administration',
-                              icon: Icons.admin_panel_settings_outlined,
+                              auth.isAdmin ? 'Administration' : 'Seller tools',
+                              icon: auth.isAdmin
+                                  ? Icons.admin_panel_settings_outlined
+                                  : Icons.storefront_outlined,
                             ),
                           ),
                           ListTile(
@@ -142,17 +144,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                           ),
-                          ListTile(
-                            leading: const Icon(Icons.people_outline),
-                            title: const Text('Manage users'),
-                            subtitle: const Text('Edit profiles and roles'),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const ManageUsersScreen(),
+                          if (auth.isAdmin) ...[
+                            ListTile(
+                              leading: const Icon(Icons.people_outline),
+                              title: const Text('Manage users'),
+                              subtitle: const Text('Edit profiles and roles'),
+                              trailing: const Icon(Icons.chevron_right),
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const ManageUsersScreen(),
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ],
                         const SizedBox(height: 8),
                         ListTile(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/product.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../utils/product_validators.dart';
 import '../../widgets/product_card.dart';
@@ -78,6 +80,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
   }
 
   Future<void> _save() async {
+    final auth = context.read<AuthProvider>();
+    if (!auth.canAddProducts) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You do not have access to this action.')),
+      );
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
 
@@ -91,7 +100,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
         imageUrl: _imageUrl.text.trim(),
         stock: int.parse(_stock.text),
         tags: List.unmodifiable(_tags),
-        isFeatured: _isFeatured,
+        isFeatured:
+            auth.isAdmin ? _isFeatured : widget.product?.isFeatured ?? false,
       );
       if (widget.isEditing) {
         await FirestoreService().updateProduct(product);
@@ -122,6 +132,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isAdmin = context.watch<AuthProvider>().isAdmin;
     return Scaffold(
       appBar: AppBar(
           title: Text(widget.isEditing ? 'Edit product' : 'Add product')),
@@ -134,10 +145,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
               children: [
                 TechPageIntro(
-                  eyebrow: 'Administration / catalog',
+                  eyebrow:
+                      isAdmin ? 'Administration / catalog' : 'Seller / catalog',
                   title: widget.isEditing ? 'Edit listing.' : 'Add a product.',
-                  description:
-                      'Update real catalog details, availability, and product media.',
+                  description: isAdmin
+                      ? 'Update real catalog details, availability, and product media.'
+                      : 'Add a product listing to the shop.',
                 ),
                 TextFormField(
                   controller: _imageUrl,
@@ -288,16 +301,17 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     ],
                   ),
                 const SizedBox(height: 12),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Show in Highlights'),
-                  subtitle: const Text(
-                      'Featured products appear in a section at the top of the shop.'),
-                  value: _isFeatured,
-                  onChanged: _saving
-                      ? null
-                      : (value) => setState(() => _isFeatured = value),
-                ),
+                if (isAdmin)
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Show in Highlights'),
+                    subtitle: const Text(
+                        'Featured products appear in a section at the top of the shop.'),
+                    value: _isFeatured,
+                    onChanged: _saving
+                        ? null
+                        : (value) => setState(() => _isFeatured = value),
+                  ),
                 const SizedBox(height: 24),
                 FilledButton(
                   onPressed: _saving ? null : _save,
